@@ -1,0 +1,30 @@
+{
+  "name": "virtue-core-enterprise-hrms",
+  "version": "2.0.0",
+  "description": "Virtue Core Business Solutions - Enterprise HRMS & Workforce Management Suite",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "keywords": [
+    "hrms",
+    "attendance",
+    "payroll",
+    "workforce",
+    "enterprise"
+  ],
+  "author": "Virtue Core Enterprise Team",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.4",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "sqlite3": "^6.0.1"
+  }
+}

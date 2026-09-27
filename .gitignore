@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment & Secrets
+.env
+.env.local
+.env.production
+
+# Operating System & IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Logs & Runtime
+*.log
+logs/
+
+# SQLite WAL and temp files (keep data/ folder structure)
+data/*.db-wal
+data/*.db-shm

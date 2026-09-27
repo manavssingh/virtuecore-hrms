@@ -1,0 +1,1422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtue Core Business Solutions - Enterprise HRMS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Chart.js for Live Data Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- jsPDF and AutoTable for Client-Side Corporate Document Exports -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col bg-slate-50">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Custom Confirmation Modal (No Browser confirm/alert) -->
+    <div id="custom-confirm-modal" class="hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center">
+            <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h3 class="text-base font-bold text-slate-800 mb-1" id="confirm-modal-title">Confirm Action</h3>
+            <p class="text-xs text-slate-500 mb-5" id="confirm-modal-msg">Are you sure you want to proceed?</p>
+            <div class="flex justify-center gap-2.5">
+                <button type="button" id="confirm-modal-btn-cancel" class="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl">Cancel</button>
+                <button type="button" id="confirm-modal-btn-ok" class="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm">Proceed</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Prompt Modal (For Rejection Reasons) -->
+    <div id="custom-prompt-modal" class="hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
+            <h3 class="text-base font-bold text-slate-800 mb-1" id="prompt-modal-title">Provide Reason</h3>
+            <p class="text-xs text-slate-500 mb-3" id="prompt-modal-msg">Please specify a reason:</p>
+            <textarea id="prompt-modal-input" rows="2" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:border-blue-500 mb-4" placeholder="Enter reason..."></textarea>
+            <div class="flex justify-end gap-2.5">
+                <button type="button" id="prompt-modal-btn-cancel" class="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl">Cancel</button>
+                <button type="button" id="prompt-modal-btn-ok" class="px-4 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-sm">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Document Preview Modal -->
+    <div id="doc-preview-modal" class="hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                <h3 id="doc-preview-title" class="text-base font-bold text-slate-800">Document Dossier</h3>
+                <button type="button" onclick="closeModal('doc-preview-modal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="doc-preview-body" class="py-4 overflow-y-auto flex-1 flex items-center justify-center"></div>
+            <div class="flex justify-end pt-3 border-t border-slate-100">
+                <button type="button" onclick="closeModal('doc-preview-modal')" class="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 rounded-xl">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Corporate Letter Generator Modal -->
+    <div id="letter-modal" class="hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                <div>
+                    <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fas fa-file-contract text-blue-600"></i> Corporate Letter Generator
+                    </h3>
+                    <p class="text-xs text-slate-500">Generate legal executive and employee letters</p>
+                </div>
+                <button type="button" onclick="closeModal('letter-modal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="py-4 overflow-y-auto flex-1 space-y-4 text-xs">
+                <input type="hidden" id="letter-user-id">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Document Format*</label>
+                        <select id="letter-doc-type" class="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold bg-slate-50 text-slate-800">
+                            <option value="offer">Formal Offer Letter (Pre-Joining)</option>
+                            <option value="appointment" selected>Letter of Appointment (Day 1 / Confirmation)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Reference Number</label>
+                        <input type="text" id="letter-ref-no" class="w-full px-3 py-2 rounded-xl border border-slate-300 font-mono bg-slate-100" readonly>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl grid grid-cols-2 sm:grid-cols-4 gap-2 text-slate-600">
+                    <div>
+                        <span class="text-[10px] text-slate-400 uppercase font-bold block">Candidate</span>
+                        <p id="letter-candidate-name" class="font-bold text-slate-800 truncate"></p>
+                    </div>
+                    <div>
+                        <span class="text-[10px] text-slate-400 uppercase font-bold block">Designation</span>
+                        <p id="letter-designation" class="font-bold text-slate-800 truncate"></p>
+                    </div>
+                    <div>
+                        <span class="text-[10px] text-slate-400 uppercase font-bold block">Annual CTC</span>
+                        <p id="letter-ctc" class="font-bold text-emerald-700 font-mono"></p>
+                    </div>
+                    <div>
+                        <span class="text-[10px] text-slate-400 uppercase font-bold block">Joining Date</span>
+                        <p id="letter-joining" class="font-bold text-slate-800"></p>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block font-bold text-slate-700">Role Duties & Responsibilities (1 per line)</label>
+                        <button type="button" onclick="resetLetterDefaultDuties()" class="text-[11px] text-blue-600 hover:underline font-bold">Reset to Role Default</button>
+                    </div>
+                    <textarea id="letter-duties" rows="4" class="w-full p-2.5 rounded-xl border border-slate-300 font-sans leading-relaxed focus:outline-none focus:border-blue-500"></textarea>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center pt-3 border-t border-slate-100">
+                <button type="button" onclick="closeModal('letter-modal')" class="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 rounded-xl">Cancel</button>
+                <div class="flex gap-2">
+                    <button type="button" onclick="printLetterDirect()" class="px-4 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-xl flex items-center gap-1.5 transition">
+                        <i class="fas fa-print"></i> Print Preview
+                    </button>
+                    <button type="button" onclick="downloadLetterPDF()" class="px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm flex items-center gap-1.5 transition">
+                        <i class="fas fa-file-pdf"></i> Download PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Regularization Modal -->
+    <div id="reg-modal" class="hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <h3 class="text-base font-bold text-slate-800 mb-1">Request Attendance Regularization</h3>
+            <p class="text-xs text-slate-500 mb-4">Date: <span id="reg-date-display" class="font-bold text-blue-600"></span></p>
+            <form id="reg-form" class="space-y-4">
+                <input type="hidden" id="reg-attendance-id">
+                <input type="hidden" id="reg-date-val">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Punch In*</label>
+                        <input type="time" id="reg-in-time" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Punch Out*</label>
+                        <input type="time" id="reg-out-time" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-blue-500">
+                    </div>
+                </div>
+                <!-- Night Shift Checkbox -->
+                <div class="flex items-center gap-2 p-2.5 bg-blue-50/70 border border-blue-100 rounded-xl">
+                    <input type="checkbox" id="reg-next-day" class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
+                    <label for="reg-next-day" class="text-xs font-semibold text-slate-700 cursor-pointer">
+                        <i class="fas fa-moon text-blue-600 mr-1"></i> Night Shift / Checkout on Next Day
+                    </label>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Reason for Regularization*</label>
+                    <textarea id="reg-reason" required rows="2" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-blue-500" placeholder="Forgot punch out / Client on-site..."></textarea>
+                </div>
+                <div class="flex justify-end gap-2.5 pt-2">
+                    <button type="button" onclick="closeModal('reg-modal')" class="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 rounded-xl">Cancel</button>
+                    <button type="submit" class="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm">Submit Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Apply Leave Modal -->
+    <div id="leave-modal" class="hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-base font-bold text-slate-800" id="leave-modal-title">Apply for Leave</h3>
+                <button type="button" onclick="closeModal('leave-modal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="leave-form" class="space-y-4">
+                <div id="leave-target-user-container" class="hidden">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Grant Leave to Employee*</label>
+                    <select id="leave-target-user" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none"></select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Leave Category*</label>
+                    <select id="leave-type" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm">
+                        <option value="Casual Leave">Casual Leave (CL)</option>
+                        <option value="Sick Leave">Sick Leave (SL)</option>
+                        <option value="Earned Leave">Earned / Privilege Leave (EL)</option>
+                        <option value="Half Day">Half Day</option>
+                        <option value="Work From Home">Work From Home (WFH)</option>
+                        <option value="Unpaid Leave">Unpaid Leave (LOP)</option>
+                        <option value="Optional Holiday">Optional Holiday</option>
+                        <option value="Emergency Leave">Emergency Leave</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Start Date*</label>
+                        <input type="date" id="leave-start" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">End Date*</label>
+                        <input type="date" id="leave-end" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Reason*</label>
+                    <textarea id="leave-reason" required rows="2" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm" placeholder="Reason for leave..."></textarea>
+                </div>
+                <div class="flex justify-end gap-2.5 pt-2">
+                    <button type="button" onclick="closeModal('leave-modal')" class="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 rounded-xl">Cancel</button>
+                    <button type="submit" class="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm">Submit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Employee Create/Edit Modal with Form Validations -->
+    <div id="emp-modal" class="hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+            <div class="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50 rounded-t-2xl">
+                <h3 id="emp-modal-title" class="text-base font-bold text-slate-800">Employee Master Record</h3>
+                <button type="button" onclick="closeModal('emp-modal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1">
+                <form id="emp-form" class="space-y-6">
+                    <input type="hidden" id="emp-edit-id">
+                    <input type="hidden" id="emp-photo-base64">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Account & Personal Details -->
+                        <div class="space-y-4">
+                            <h4 class="font-bold text-xs text-blue-600 uppercase tracking-wider border-b pb-1.5"><i class="fas fa-user-circle mr-1"></i> Account & Profile</h4>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Username / Access ID*</label>
+                                <input type="text" id="emp-username" required pattern="^[a-zA-Z0-9._-]{3,25}$" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Password*</label>
+                                <div class="relative">
+                                    <input type="password" id="emp-password" required minlength="6" class="w-full pl-3 pr-10 py-2 rounded-xl border border-slate-300 text-sm">
+                                    <button type="button" onclick="togglePasswordVisibility('emp-password', 'eye-emp-pwd')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
+                                        <i id="eye-emp-pwd" class="fas fa-eye text-xs"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Full Legal Name*</label>
+                                <input type="text" id="emp-name" required minlength="2" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Corporate Email*</label>
+                                <input type="email" id="emp-email" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Contact Phone (10 digits)*</label>
+                                <input type="tel" id="emp-phone" required pattern="^[0-9]{10}$" maxlength="10" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Residential Address</label>
+                                <textarea id="emp-address" rows="2" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Employment, Statutory & CTC Structure -->
+                        <div class="space-y-4">
+                            <h4 class="font-bold text-xs text-blue-600 uppercase tracking-wider border-b pb-1.5"><i class="fas fa-briefcase mr-1"></i> Employment & Compensation</h4>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1">Employee ID*</label>
+                                    <input type="text" id="emp-id-val" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1">Joining Date*</label>
+                                    <input type="date" id="emp-joining" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1">Department*</label>
+                                    <select id="emp-dept" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm">
+                                        <option value="Operations">Operations</option>
+                                        <option value="IT">IT</option>
+                                        <option value="HR">HR</option>
+                                        <option value="Finance">Finance</option>
+                                        <option value="Marketing">Marketing</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1">Designation*</label>
+                                    <input type="text" id="emp-designation" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1">System Role*</label>
+                                    <select id="emp-role-select" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-semibold">
+                                        <option value="employee">Employee</option>
+                                        <option value="supervisor">Supervisor</option>
+                                        <option value="hr">HR Specialist</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1">Annual CTC (INR)*</label>
+                                    <input type="number" id="emp-ctc" required min="120000" step="10000" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-mono" placeholder="480000">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1">Aadhaar (12 Digits)*</label>
+                                    <input type="text" id="emp-aadhar" required pattern="^[0-9]{12}$" maxlength="12" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1">PAN Card (10 Chars)*</label>
+                                    <input type="text" id="emp-pan" required pattern="^[A-Z]{5}[0-9]{4}[A-Z]{1}$" maxlength="10" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm uppercase">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-2.5 pt-4 border-t">
+                        <button type="button" onclick="closeModal('emp-modal')" class="px-5 py-2 text-xs font-bold text-slate-600 bg-slate-100 rounded-xl">Cancel</button>
+                        <button type="submit" class="px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md">Save Master Record</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Announcement Modal -->
+    <div id="announcement-modal" class="hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-base font-bold text-slate-800"><i class="fas fa-bullhorn text-blue-600 mr-2"></i>Post Announcement / Direct Message</h3>
+                <button type="button" onclick="closeModal('announcement-modal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="announcement-form" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Subject / Title*</label>
+                    <input type="text" id="ann-title" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm" placeholder="e.g. Critical Shift Notice / Policy Update">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Target Audience*</label>
+                    <select id="ann-target-type" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-semibold bg-slate-50 text-slate-800">
+                        <option value="ALL">Entire Organization (All Employees)</option>
+                        <option value="DEPARTMENT">Specific Department</option>
+                        <option value="USER">Direct Message (Single Employee)</option>
+                    </select>
+                </div>
+                <div id="ann-dept-container" class="hidden">
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Target Department</label>
+                    <select id="ann-dept" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm">
+                        <option value="Operations">Operations</option>
+                        <option value="IT">IT</option>
+                        <option value="HR">HR</option>
+                        <option value="Finance">Finance</option>
+                        <option value="Marketing">Marketing</option>
+                    </select>
+                </div>
+                <div id="ann-user-container" class="hidden">
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Select Employee*</label>
+                    <select id="ann-user" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-medium bg-slate-50">
+                        <!-- Populated dynamically from allUsers -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Message Content*</label>
+                    <textarea id="ann-message" required rows="3" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm" placeholder="Write announcement details or direct employee message..."></textarea>
+                </div>
+                <div class="flex items-center gap-2.5 p-3 bg-blue-50/70 border border-blue-100 rounded-xl">
+                    <input type="checkbox" id="ann-require-ack" class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500">
+                    <label for="ann-require-ack" class="text-xs font-bold text-slate-700 cursor-pointer select-none">
+                        Require Recipient Acknowledgement
+                        <span class="block text-[10px] text-slate-500 font-normal">Employees must click 'Acknowledge Receipt' to log confirmation</span>
+                    </label>
+                </div>
+                <div class="flex justify-end gap-2.5 pt-2">
+                    <button type="button" onclick="closeModal('announcement-modal')" class="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 rounded-xl">Cancel</button>
+                    <button type="submit" class="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm">Send / Publish</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Holiday Modal -->
+    <div id="holiday-modal" class="hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-base font-bold text-slate-800"><i class="fas fa-calendar-day text-emerald-600 mr-2"></i>Add Holiday</h3>
+                <button type="button" onclick="closeModal('holiday-modal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="holiday-form" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Holiday Name*</label>
+                    <input type="text" id="hol-name" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm" placeholder="e.g. Diwali / Republic Day">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Date*</label>
+                    <input type="date" id="hol-date" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Type</label>
+                    <select id="hol-type" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm">
+                        <option value="National Holiday">National Holiday</option>
+                        <option value="Festival">Festival</option>
+                        <option value="Optional Holiday">Optional Holiday</option>
+                    </select>
+                </div>
+                <div class="flex justify-end gap-2.5 pt-2">
+                    <button type="button" onclick="closeModal('holiday-modal')" class="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 rounded-xl">Cancel</button>
+                    <button type="submit" class="px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm">Save Holiday</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Document Upload Modal -->
+    <div id="doc-upload-modal" class="hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
+            <h3 class="text-base font-bold text-slate-800 mb-4">Upload Document Dossier</h3>
+            <form id="doc-upload-form" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Document Category*</label>
+                    <select id="doc-type" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm">
+                        <option value="Aadhaar Card">Aadhaar Card</option>
+                        <option value="PAN Card">PAN Card</option>
+                        <option value="Offer Letter">Offer Letter</option>
+                        <option value="Appointment Letter">Appointment Letter</option>
+                        <option value="Bank Passbook / Cheque">Bank Passbook / Cheque</option>
+                        <option value="Certificates">Certificates / Educational Degree</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">File Attachment*</label>
+                    <input type="file" id="doc-file-input" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-slate-50">
+                    <input type="hidden" id="doc-file-base64">
+                </div>
+                <div class="flex justify-end gap-2.5 pt-2">
+                    <button type="button" onclick="closeModal('doc-upload-modal')" class="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 rounded-xl">Cancel</button>
+                    <button type="submit" class="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm">Upload Document</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Roster Modal -->
+    <div id="edit-roster-modal" class="hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
+            <h3 class="text-base font-bold text-slate-800 mb-4">Edit Roster Schedule</h3>
+            <form id="edit-roster-form" class="space-y-4">
+                <input type="hidden" id="edit-roster-id">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Date*</label>
+                    <input type="date" id="edit-roster-date" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Start Time*</label>
+                        <input type="time" id="edit-roster-start" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">End Time*</label>
+                        <input type="time" id="edit-roster-end" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2.5 pt-2">
+                    <button type="button" onclick="closeModal('edit-roster-modal')" class="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 rounded-xl">Cancel</button>
+                    <button type="submit" class="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm">Update Shift</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Password Modal -->
+    <div id="password-modal" class="hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
+            <h3 class="text-base font-bold text-slate-800 mb-4">Change Security Password</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">New Password (Min 6 chars)</label>
+                    <div class="relative">
+                        <input type="password" id="new-password-input" minlength="6" class="w-full pl-3 pr-10 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-blue-500">
+                        <button type="button" onclick="togglePasswordVisibility('new-password-input', 'eye-pwd-new')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
+                            <i id="eye-pwd-new" class="fas fa-eye text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Confirm Password</label>
+                    <div class="relative">
+                        <input type="password" id="confirm-password-input" minlength="6" class="w-full pl-3 pr-10 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-blue-500">
+                        <button type="button" onclick="togglePasswordVisibility('confirm-password-input', 'eye-pwd-conf')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
+                            <i id="eye-pwd-conf" class="fas fa-eye text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2.5 mt-5">
+                    <button type="button" onclick="closeModal('password-modal')" class="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 rounded-xl">Cancel</button>
+                    <button id="btn-save-password" type="button" class="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm">Save Password</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Drawer -->
+    <div id="notif-drawer" class="hidden fixed top-16 right-4 z-50 bg-white rounded-2xl shadow-2xl border border-slate-200 w-96 max-h-[32rem] flex flex-col overflow-hidden">
+        <div class="p-3.5 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <h4 class="font-bold text-xs text-slate-800 flex items-center gap-1.5"><i class="fas fa-bell text-blue-600"></i>Announcements & Messages</h4>
+                <span id="notif-count-tag" class="text-[10px] bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-full">0</span>
+            </div>
+            <button type="button" id="btn-close-notif" class="w-6 h-6 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/70 flex items-center justify-center transition" title="Close">
+                <i class="fas fa-times text-xs"></i>
+            </button>
+        </div>
+        <div id="notif-list" class="divide-y divide-slate-100 overflow-y-auto flex-1 p-2 space-y-2">
+            <p class="text-xs text-slate-400 text-center py-6">No announcements</p>
+        </div>
+    </div>
+
+    <!-- ==================== LOGIN VIEW ==================== -->
+    <div id="login-view" class="flex-1 flex items-center justify-center min-h-screen p-4 relative overflow-hidden bg-slate-900">
+        <div class="max-w-md w-full bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20 relative z-10">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-500/30">
+                    <i class="fas fa-briefcase text-white text-2xl"></i>
+                </div>
+                <h1 class="text-2xl font-black text-slate-900 tracking-tight">Virtue Core</h1>
+                <p class="text-xs font-bold text-blue-600 uppercase tracking-widest mt-0.5">Business Solutions</p>
+            </div>
+            
+            <div id="init-loading" class="flex flex-col items-center justify-center py-6">
+                <div class="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-3"></div>
+                <p class="text-xs font-semibold text-slate-500">Connecting to secure cloud directory...</p>
+            </div>
+
+            <form id="login-form" class="space-y-4 hidden">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5 ml-0.5 flex items-center gap-1.5">
+                        <i class="fas fa-user-circle text-slate-400"></i> Username / Access ID
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                            <i class="fas fa-user text-sm"></i>
+                        </div>
+                        <input type="text" id="login-username" required class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:border-blue-500 text-sm font-medium transition-all" autocomplete="username">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5 ml-0.5 flex items-center gap-1.5">
+                        <i class="fas fa-lock text-slate-400"></i> Password
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                            <i class="fas fa-key text-sm"></i>
+                        </div>
+                        <input type="password" id="login-password" required class="w-full pl-10 pr-10 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:border-blue-500 text-sm font-medium transition-all" autocomplete="current-password">
+                        <button type="button" onclick="togglePasswordVisibility('login-password', 'eye-login-pwd')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
+                            <i id="eye-login-pwd" class="fas fa-eye text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-3.5 rounded-xl font-bold text-sm shadow-md transition-all hover:shadow-lg mt-3">
+                    Sign In
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== MAIN PORTAL VIEW ==================== -->
+    <div id="app-view" class="hidden flex-col min-h-screen">
+        <!-- Top Navbar -->
+        <nav class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-md">
+                            <i class="fas fa-briefcase text-white text-base"></i>
+                        </div>
+                        <div>
+                            <h1 class="font-extrabold text-slate-900 text-base leading-tight">Virtue Core</h1>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Business Solutions</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-3">
+                        <button id="btn-toggle-notif" class="relative w-9 h-9 rounded-xl bg-slate-50 text-slate-600 hover:bg-slate-100 flex items-center justify-center">
+                            <i class="fas fa-bell text-sm"></i>
+                            <span id="bell-badge" class="hidden absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+                        </button>
+
+                        <span id="role-badge" class="px-3 py-1 text-[11px] font-extrabold rounded-full uppercase tracking-wider">Role</span>
+                        <div class="h-6 w-px bg-slate-200"></div>
+
+                        <div class="flex items-center gap-2.5">
+                            <div class="text-right hidden sm:block">
+                                <p id="user-name-display" class="text-xs font-bold text-slate-800 leading-tight">User</p>
+                                <button onclick="document.getElementById('password-modal').classList.remove('hidden')" class="text-[10px] text-blue-600 hover:underline font-semibold leading-none">Change Password</button>
+                            </div>
+                            <div class="w-9 h-9 rounded-full bg-slate-100 border border-slate-200 text-slate-600 flex items-center justify-center font-bold text-sm overflow-hidden bg-cover bg-center" id="user-avatar">
+                                <span>U</span>
+                            </div>
+                        </div>
+
+                        <button id="btn-logout" class="ml-1 w-9 h-9 rounded-xl bg-slate-50 text-slate-500 hover:bg-red-50 hover:text-red-600 border border-slate-200 transition-all flex items-center justify-center" title="Logout">
+                            <i class="fas fa-sign-out-alt text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Navigation Tabs: Employee Portal (8 Tabs) -->
+                <div id="emp-tab-nav" class="hidden flex space-x-6 overflow-x-auto border-t border-slate-100 pt-2 pb-1">
+                    <button class="nav-tab-btn border-b-2 border-blue-600 text-blue-600 pb-2 px-1 text-xs font-bold whitespace-nowrap" data-target="emp-tab-clock"><i class="fas fa-clock mr-1.5"></i>Time Clock</button>
+                    <button class="nav-tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-800 pb-2 px-1 text-xs font-bold whitespace-nowrap" data-target="emp-tab-calendar"><i class="fas fa-calendar-check mr-1.5"></i>My Attendance Calendar</button>
+                    <button class="nav-tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-800 pb-2 px-1 text-xs font-bold whitespace-nowrap" data-target="emp-tab-history"><i class="fas fa-history mr-1.5"></i>My History & Regularize</button>
+                    <button class="nav-tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-800 pb-2 px-1 text-xs font-bold whitespace-nowrap" data-target="emp-tab-leaves"><i class="fas fa-calendar-minus mr-1.5"></i>My Leaves</button>
+                    <button class="nav-tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-800 pb-2 px-1 text-xs font-bold whitespace-nowrap" data-target="emp-tab-payroll"><i class="fas fa-file-invoice-dollar mr-1.5"></i>My Payroll</button>
+                    <button class="nav-tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-800 pb-2 px-1 text-xs font-bold whitespace-nowrap" data-target="emp-tab-roster"><i class="fas fa-calendar-alt mr-1.5"></i>Team Roster</button>
+                    <button class="nav-tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-800 pb-2 px-1 text-xs font-bold whitespace-nowrap" data-target="emp-tab-docs"><i class="fas fa-file-alt mr-1.5"></i>My Documents</button>
+                    <button class="nav-tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-800 pb-2 px-1 text-xs font-bold whitespace-nowrap" data-target="emp-tab-holidays"><i class="fas fa-calendar-day mr-1.5"></i>Holidays</button>
+                </div>
+
+                <!-- Navigation Tabs: Management Suite (Admin, Supervisor, HR - 13 Tabs) -->
+                <div id="mgmt-tab-nav" class="hidden flex space-x-5 overflow-x-auto border-t border-slate-100 pt-2 pb-1">
+                    <button class="mgmt-tab-btn border-b-2 border-blue-600 text-blue-600 pb-2 px-1 text-xs font-bold whitespace-nowrap" data-target="mgmt-tab-dashboard"><i class="fas fa-chart-line mr-1.5"></i>Executive Dashboard</button>
+                    <button class="mgmt-tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-800 pb-2 px-1 text-xs font-bold whitespace-nowrap" data-target="mgmt-tab-calendar"><i class="fas fa-calendar-alt mr-1.5"></i>Attendance Calendar</button>
+                    <button class="mgmt-tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-800 pb-2 px-1 text-xs font-bold whitespace-nowrap" data-target="mgmt-tab-attendance"><i class="fas fa-clipboard-check mr-1.5"></i>All Attendance</button>
+                    <button class="mgmt-tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-800 pb-2 px-1 text-xs font-bold whitespace-nowrap" data-target="mgmt-tab-leaves"><i class="fas fa-calendar-check mr-1.5"></i>Leave Center</button>
+                    <button class="mgmt-tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-800 pb-2 px-1 text-xs font-bold whitespace-nowrap" data-target="mgmt-tab-requests">
+                        <i class="fas fa-inbox mr-1.5"></i>Pending Approvals <span id="mgmt-req-badge" class="hidden ml-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">0</span>
+                    </button>
+                    <button class="mgmt-tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-800 pb-2 px-1 text-xs font-bold whitespace-nowrap" data-target="mgmt-tab-roster"><i class="fas fa-clock mr-1.5"></i>Roster Setup</button>
+                    <button class="mgmt-tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-800 pb-2 px-1 text-xs font-bold whitespace-nowrap" data-target="mgmt-tab-employees"><i class="fas fa-users mr-1.5"></i>Employees</button>
+                    <button class="mgmt-tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-800 pb-2 px-1 text-xs font-bold whitespace-nowrap" data-target="mgmt-tab-docs"><i class="fas fa-file-signature mr-1.5"></i>Verify Docs</button>
+                    <button class="mgmt-tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-800 pb-2 px-1 text-xs font-bold whitespace-nowrap" data-target="mgmt-tab-reports"><i class="fas fa-chart-pie mr-1.5"></i>Reports</button>
+                    <button class="mgmt-tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-800 pb-2 px-1 text-xs font-bold whitespace-nowrap" data-target="mgmt-tab-payroll"><i class="fas fa-calculator mr-1.5"></i>Payroll Engine</button>
+                    <button class="mgmt-tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-800 pb-2 px-1 text-xs font-bold whitespace-nowrap" data-target="mgmt-tab-audit"><i class="fas fa-history mr-1.5"></i>Audit Log</button>
+                    <button class="mgmt-tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-800 pb-2 px-1 text-xs font-bold whitespace-nowrap" data-target="mgmt-tab-holidays"><i class="fas fa-umbrella-beach mr-1.5"></i>Holidays</button>
+                    <button id="nav-btn-settings" class="mgmt-tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-800 pb-2 px-1 text-xs font-bold whitespace-nowrap" data-target="mgmt-tab-settings"><i class="fas fa-cog mr-1.5"></i>Settings</button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Application Workspace -->
+        <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+            <!-- ==================== EMPLOYEE PANELS ==================== -->
+            <div id="employee-panels" class="hidden space-y-6">
+
+                <!-- 1. Emp Clock -->
+                <div id="emp-tab-clock" class="emp-view-panel space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col justify-between">
+                            <div>
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Shift Clock</span>
+                                <div class="flex items-center gap-3 mt-3">
+                                    <div id="emp-clock-ind" class="w-4 h-4 rounded-full bg-slate-300"></div>
+                                    <span id="emp-clock-status" class="text-2xl font-black text-slate-800 tracking-tight">Not Punched In</span>
+                                </div>
+                                <p id="emp-clock-sub" class="text-xs font-medium text-slate-500 mt-1">Ready to start.</p>
+                            </div>
+                            <div class="mt-6 pt-4 border-t border-slate-100 flex justify-between items-center text-xs">
+                                <span class="text-slate-500 font-medium"><i class="far fa-calendar-alt mr-1.5"></i>Today</span>
+                                <span id="emp-today-date" class="font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-md"></span>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:col-span-2">
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Clock Actions</h2>
+                                <span class="text-[11px] font-bold text-slate-400"><i class="fas fa-map-marker-alt text-blue-500 mr-1"></i>Geo-Tagged</span>
+                            </div>
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3" id="emp-actions-container"></div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="bg-blue-50/60 rounded-xl p-5 border border-blue-100">
+                            <p class="text-[11px] font-bold text-blue-600 uppercase tracking-wider mb-1"><i class="fas fa-business-time mr-1"></i> Work Hours Today</p>
+                            <p id="emp-stat-work" class="text-2xl font-black text-slate-800">0h 0m</p>
+                        </div>
+                        <div class="bg-amber-50/60 rounded-xl p-5 border border-amber-100">
+                            <p class="text-[11px] font-bold text-amber-600 uppercase tracking-wider mb-1"><i class="fas fa-mug-hot mr-1"></i> Break Duration</p>
+                            <p id="emp-stat-break" class="text-2xl font-black text-slate-800">0h 0m</p>
+                        </div>
+                        <div class="bg-slate-100/70 rounded-xl p-5 border border-slate-200">
+                            <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1"><i class="fas fa-sign-in-alt mr-1"></i> First Punch-In</p>
+                            <p id="emp-stat-firstin" class="text-2xl font-black text-slate-800">--:--</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Emp Attendance Calendar -->
+                <div id="emp-tab-calendar" class="emp-view-panel hidden space-y-4">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 pb-4 border-b border-slate-100">
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-sm">My Monthly Attendance Calendar</h3>
+                                <p class="text-xs text-slate-500">Track present days, punch timestamps, late arrivals, approved leaves, and company holidays.</p>
+                            </div>
+                            <input type="month" id="emp-cal-month" class="px-3 py-1.5 rounded-xl border border-slate-300 text-xs font-semibold">
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-4" id="emp-cal-stats"></div>
+                        <div class="grid grid-cols-7 gap-1 text-center font-bold text-[11px] text-slate-400 mb-2">
+                            <span>SUN</span><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span>
+                        </div>
+                        <div class="grid grid-cols-7 gap-1.5" id="emp-cal-grid"></div>
+                    </div>
+                </div>
+
+                <!-- 3. Emp History & Regularization -->
+                <div id="emp-tab-history" class="emp-view-panel hidden space-y-4">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-5 border-b border-slate-100 bg-slate-50/50">
+                            <h3 class="font-bold text-slate-800 text-sm">Attendance History & Regularization</h3>
+                            <p class="text-xs text-slate-500">View logged shifts. Click Regularize if any session is missing.</p>
+                        </div>
+                        <div class="overflow-x-auto table-container">
+                            <table class="min-w-full divide-y divide-slate-100 text-left text-xs">
+                                <thead class="bg-slate-50 font-bold text-slate-500 uppercase">
+                                    <tr>
+                                        <th class="px-5 py-3.5">Date</th>
+                                        <th class="px-5 py-3.5">Status</th>
+                                        <th class="px-5 py-3.5">Punch In</th>
+                                        <th class="px-5 py-3.5">Punch Out</th>
+                                        <th class="px-5 py-3.5">Work Hours</th>
+                                        <th class="px-5 py-3.5 text-right">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="emp-history-tbody" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Emp Leaves -->
+                <div id="emp-tab-leaves" class="emp-view-panel hidden space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-bold text-slate-800 text-base">My Leave Center</h3>
+                        <button onclick="openApplyLeaveModalForEmp()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-bold text-xs shadow-sm">
+                            <i class="fas fa-plus mr-1.5"></i>Apply Leave
+                        </button>
+                    </div>
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="overflow-x-auto table-container">
+                            <table class="min-w-full divide-y divide-slate-100 text-left text-xs">
+                                <thead class="bg-slate-50 font-bold text-slate-500 uppercase">
+                                    <tr>
+                                        <th class="px-5 py-3.5">Type</th>
+                                        <th class="px-5 py-3.5">Dates</th>
+                                        <th class="px-5 py-3.5">Reason</th>
+                                        <th class="px-5 py-3.5">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="emp-leaves-tbody" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. Emp Payroll Self-Service -->
+                <div id="emp-tab-payroll" class="emp-view-panel hidden space-y-4">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+                        <div class="flex justify-between items-center pb-4 border-b border-slate-100">
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-sm">My Corporate Salary & Payslip Vault</h3>
+                                <p class="text-xs text-slate-500">View locked statements and download signed payslips.</p>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-[10px] text-slate-400 font-bold uppercase block">Annual CTC</span>
+                                <p id="emp-payroll-ctc-display" class="font-mono font-black text-slate-800 text-base"></p>
+                            </div>
+                        </div>
+                        <div class="mt-4 overflow-x-auto table-container">
+                            <table class="min-w-full divide-y divide-slate-100 text-left text-xs">
+                                <thead class="bg-slate-50 font-bold text-slate-500 uppercase">
+                                    <tr>
+                                        <th class="px-5 py-3.5">Pay Period</th>
+                                        <th class="px-5 py-3.5">Monthly Gross</th>
+                                        <th class="px-5 py-3.5">LOP Deduction</th>
+                                        <th class="px-5 py-3.5">Statutory (PF/PT)</th>
+                                        <th class="px-5 py-3.5 font-bold text-emerald-700">Net Disbursed</th>
+                                        <th class="px-5 py-3.5 text-right">Payslip PDF</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="emp-payroll-tbody" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6. Emp Team Roster -->
+                <div id="emp-tab-roster" class="emp-view-panel hidden space-y-4">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-5 border-b border-slate-100 bg-slate-50/50">
+                            <h3 class="font-bold text-slate-800 text-sm">Team Roster Schedule</h3>
+                        </div>
+                        <div class="overflow-x-auto table-container">
+                            <table class="min-w-full divide-y divide-slate-100 text-left text-xs">
+                                <thead class="bg-slate-50 font-bold text-slate-500 uppercase">
+                                    <tr>
+                                        <th class="px-5 py-3.5">Date</th>
+                                        <th class="px-5 py-3.5">Employee</th>
+                                        <th class="px-5 py-3.5">Shift Timing</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="emp-roster-tbody" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 7. Emp Documents -->
+                <div id="emp-tab-docs" class="emp-view-panel hidden space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-bold text-slate-800 text-base">My Verification Documents</h3>
+                        <button onclick="document.getElementById('doc-upload-modal').classList.remove('hidden')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-bold text-xs shadow-sm">
+                            <i class="fas fa-upload mr-1.5"></i>Upload Document
+                        </button>
+                    </div>
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="overflow-x-auto table-container">
+                            <table class="min-w-full divide-y divide-slate-100 text-left text-xs">
+                                <thead class="bg-slate-50 font-bold text-slate-500 uppercase">
+                                    <tr>
+                                        <th class="px-5 py-3.5">Document Type</th>
+                                        <th class="px-5 py-3.5">Upload Date</th>
+                                        <th class="px-5 py-3.5">Status & Remarks</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="emp-docs-tbody" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 8. Emp Holidays -->
+                <div id="emp-tab-holidays" class="emp-view-panel hidden space-y-4">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-5 border-b border-slate-100 bg-slate-50/50">
+                            <h3 class="font-bold text-slate-800 text-sm">Official Company Holiday Calendar</h3>
+                        </div>
+                        <div class="overflow-x-auto table-container">
+                            <table class="min-w-full divide-y divide-slate-100 text-left text-xs">
+                                <thead class="bg-slate-50 font-bold text-slate-500 uppercase">
+                                    <tr>
+                                        <th class="px-5 py-3.5">Date</th>
+                                        <th class="px-5 py-3.5">Holiday Name</th>
+                                        <th class="px-5 py-3.5">Type</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="emp-holidays-tbody" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ==================== MANAGEMENT PANELS (ADMIN, SUPERVISOR, HR) ==================== -->
+            <div id="mgmt-panels" class="hidden space-y-6">
+
+                <!-- 1. Executive Dashboard -->
+                <div id="mgmt-tab-dashboard" class="mgmt-view-panel space-y-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <div>
+                            <h2 class="text-base font-extrabold text-slate-800">Executive Overview</h2>
+                            <p class="text-xs text-slate-400">Live workforce presence and analytical trajectories</p>
+                        </div>
+                        <button onclick="openAnnouncementModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-1.5 rounded-xl font-bold text-xs shadow-sm flex items-center gap-1.5">
+                            <i class="fas fa-bullhorn"></i> New Announcement
+                        </button>
+                    </div>
+
+                    <!-- Date Filter Bar -->
+                    <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs">
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-slate-600"><i class="fas fa-filter text-blue-600 mr-1"></i>Date Filter:</span>
+                            <div class="inline-flex rounded-xl p-0.5 bg-slate-100 border border-slate-200">
+                                <button type="button" onclick="setDashboardFilterPreset('today')" id="flt-btn-today" class="px-3 py-1 font-bold rounded-lg bg-white shadow-sm text-blue-700">Today</button>
+                                <button type="button" onclick="setDashboardFilterPreset('yesterday')" id="flt-btn-yesterday" class="px-3 py-1 font-semibold rounded-lg text-slate-600 hover:text-slate-900">Yesterday</button>
+                                <button type="button" onclick="setDashboardFilterPreset('week')" id="flt-btn-week" class="px-3 py-1 font-semibold rounded-lg text-slate-600 hover:text-slate-900">1 Week</button>
+                                <button type="button" onclick="setDashboardFilterPreset('month')" id="flt-btn-month" class="px-3 py-1 font-semibold rounded-lg text-slate-600 hover:text-slate-900">1 Month</button>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <span class="text-slate-400">Custom:</span>
+                            <input type="date" id="flt-custom-start" class="px-2.5 py-1 rounded-lg border border-slate-200 text-xs">
+                            <span class="text-slate-400">to</span>
+                            <input type="date" id="flt-custom-end" class="px-2.5 py-1 rounded-lg border border-slate-200 text-xs">
+                            <button type="button" onclick="applyCustomDashboardFilter()" class="bg-slate-800 hover:bg-black text-white px-3 py-1 rounded-lg font-bold">Apply</button>
+                            <button type="button" onclick="resetDashboardFilter()" class="text-slate-400 hover:text-slate-600 px-2 py-1"><i class="fas fa-undo"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- 10 Metric Cards (Condenses to 5 on Filter Change) -->
+                    <div id="mgmt-metrics-grid" class="grid grid-cols-2 sm:grid-cols-5 gap-3.5">
+                        <div id="card-metric-total" class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-slate-400">
+                            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total Employees</p>
+                            <p id="m-stat-total" class="text-2xl font-black text-slate-800 mt-1">0</p>
+                            <p class="text-[10px] text-slate-400 mt-0.5">Active workforce</p>
+                        </div>
+                        <div id="card-metric-present" class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-emerald-500">
+                            <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Present</p>
+                            <p id="m-stat-present" class="text-2xl font-black text-slate-800 mt-1">0</p>
+                            <p class="text-[10px] text-slate-400 mt-0.5">Clocked in</p>
+                        </div>
+                        <div id="card-metric-absent" class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-rose-500">
+                            <p class="text-[10px] font-bold text-rose-600 uppercase tracking-wider">Absent</p>
+                            <p id="m-stat-absent" class="text-2xl font-black text-slate-800 mt-1">0</p>
+                            <p class="text-[10px] text-slate-400 mt-0.5">No punch</p>
+                        </div>
+                        <div id="card-metric-late" class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-amber-500">
+                            <p class="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Late Arrivals</p>
+                            <p id="m-stat-late" class="text-2xl font-black text-slate-800 mt-1">0</p>
+                            <p id="m-stat-late-label" class="text-[10px] text-slate-400 mt-0.5">Post 09:30 AM</p>
+                        </div>
+                        <div id="card-metric-leave" class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-purple-500">
+                            <p class="text-[10px] font-bold text-purple-600 uppercase tracking-wider">On Leave</p>
+                            <p id="m-stat-leave" class="text-2xl font-black text-slate-800 mt-1">0</p>
+                            <p class="text-[10px] text-slate-400 mt-0.5">Approved</p>
+                        </div>
+                        <div id="card-metric-working" class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-teal-500">
+                            <p class="text-[10px] font-bold text-teal-600 uppercase tracking-wider">Currently Working</p>
+                            <p id="m-stat-working" class="text-2xl font-black text-slate-800 mt-1">0</p>
+                            <p class="text-[10px] text-slate-400 mt-0.5">Active at station</p>
+                        </div>
+                        <div id="card-metric-break" class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-orange-500">
+                            <p class="text-[10px] font-bold text-orange-600 uppercase tracking-wider">On Break</p>
+                            <p id="m-stat-break" class="text-2xl font-black text-slate-800 mt-1">0</p>
+                            <p class="text-[10px] text-slate-400 mt-0.5">Lunch / Tea break</p>
+                        </div>
+                        <div id="card-metric-completed" class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-blue-500">
+                            <p class="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Completed Shift</p>
+                            <p id="m-stat-completed" class="text-2xl font-black text-slate-800 mt-1">0</p>
+                            <p class="text-[10px] text-slate-400 mt-0.5">Clocked out</p>
+                        </div>
+                        <div id="card-metric-pending" class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-red-500">
+                            <p class="text-[10px] font-bold text-red-600 uppercase tracking-wider">Pending Requests</p>
+                            <p id="m-stat-pending" class="text-2xl font-black text-slate-800 mt-1">0</p>
+                            <p class="text-[10px] text-slate-400 mt-0.5">Approvals</p>
+                        </div>
+                        <div id="card-metric-rate" class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-indigo-500">
+                            <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">Attendance Rate</p>
+                            <p id="m-stat-rate" class="text-2xl font-black text-slate-800 mt-1">0%</p>
+                            <p class="text-[10px] text-slate-400 mt-0.5">Turnout %</p>
+                        </div>
+                    </div>
+
+                    <!-- 4 Real-Data Visual Charts (Chart.js) -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                            <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2"><i class="fas fa-chart-bar mr-1.5 text-blue-600"></i>Weekly Attendance</h3>
+                            <div class="h-56 relative"><canvas id="chart-weekly"></canvas></div>
+                        </div>
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                            <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2"><i class="fas fa-chart-line mr-1.5 text-indigo-600"></i>Monthly Attendance Trajectory</h3>
+                            <div class="h-56 relative"><canvas id="chart-monthly"></canvas></div>
+                        </div>
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                            <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2"><i class="fas fa-user-clock mr-1.5 text-amber-500"></i>Late Arrivals Trend</h3>
+                            <div class="h-56 relative"><canvas id="chart-late"></canvas></div>
+                        </div>
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                            <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2"><i class="fas fa-chart-pie mr-1.5 text-purple-600"></i>Leave Distribution</h3>
+                            <div class="h-56 relative flex items-center justify-center"><canvas id="chart-leave"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Attendance Calendar (Management View) -->
+                <div id="mgmt-tab-calendar" class="mgmt-view-panel hidden space-y-4">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 pb-4 border-b border-slate-100">
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-sm">Corporate Attendance Calendar Inspection</h3>
+                                <p class="text-xs text-slate-500">Inspect turnouts, late punches, leaves, and LOPs by employee.</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <select id="mgmt-cal-user-select" class="px-3 py-1.5 rounded-xl border border-slate-300 text-xs font-semibold"></select>
+                                <input type="month" id="mgmt-cal-month" class="px-3 py-1.5 rounded-xl border border-slate-300 text-xs font-semibold">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-4" id="mgmt-cal-stats"></div>
+                        <div class="grid grid-cols-7 gap-1 text-center font-bold text-[11px] text-slate-400 mb-2">
+                            <span>SUN</span><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span>
+                        </div>
+                        <div class="grid grid-cols-7 gap-1.5" id="mgmt-cal-grid"></div>
+                    </div>
+                </div>
+
+                <!-- 3. All Attendance -->
+                <div id="mgmt-tab-attendance" class="mgmt-view-panel hidden space-y-4">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-sm">Company Attendance Master Log</h3>
+                                <p class="text-xs text-slate-500">Complete records with regularized badges.</p>
+                            </div>
+                        </div>
+                        <div class="p-3 border-b border-slate-100 flex gap-3">
+                            <input type="text" id="att-filter-search" placeholder="Search employee..." class="px-3 py-1.5 rounded-xl border border-slate-300 text-xs w-64">
+                            <select id="att-filter-date" class="px-3 py-1.5 rounded-xl border border-slate-300 text-xs font-semibold">
+                                <option value="all">All Dates</option>
+                                <option value="today">Today Only</option>
+                            </select>
+                        </div>
+                        <div class="overflow-x-auto table-container">
+                            <table class="min-w-full divide-y divide-slate-100 text-left text-xs">
+                                <thead class="bg-slate-50 font-bold text-slate-500 uppercase">
+                                    <tr>
+                                        <th class="px-5 py-3.5">Employee</th>
+                                        <th class="px-5 py-3.5">Date</th>
+                                        <th class="px-5 py-3.5">Status</th>
+                                        <th class="px-5 py-3.5">Punch In</th>
+                                        <th class="px-5 py-3.5">Punch Out</th>
+                                        <th class="px-5 py-3.5">Work Duration</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="mgmt-att-tbody" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Leave Center -->
+                <div id="mgmt-tab-leaves" class="mgmt-view-panel hidden space-y-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-base">Corporate Leave Center</h3>
+                            <p class="text-xs text-slate-500">Grant official leaves and manage LOP deductions.</p>
+                        </div>
+                        <button onclick="openApplyLeaveModalForMgmt()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-bold text-xs shadow-sm">
+                            <i class="fas fa-plus mr-1.5"></i>Grant Leave to Employee
+                        </button>
+                    </div>
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="overflow-x-auto table-container">
+                            <table class="min-w-full divide-y divide-slate-100 text-left text-xs">
+                                <thead class="bg-slate-50 font-bold text-slate-500 uppercase">
+                                    <tr>
+                                        <th class="px-5 py-3.5">Employee</th>
+                                        <th class="px-5 py-3.5">Type</th>
+                                        <th class="px-5 py-3.5">Period</th>
+                                        <th class="px-5 py-3.5">Reason</th>
+                                        <th class="px-5 py-3.5">Status</th>
+                                        <th class="px-5 py-3.5 text-right">Delete LOP / Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="mgmt-all-leaves-tbody" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. Pending Approvals -->
+                <div id="mgmt-tab-requests" class="mgmt-view-panel hidden space-y-6">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-4 border-b border-slate-100 bg-slate-50">
+                            <h3 class="font-bold text-slate-800 text-sm"><i class="fas fa-clock text-blue-600 mr-2"></i>Pending Regularizations</h3>
+                        </div>
+                        <div class="overflow-x-auto table-container">
+                            <table class="min-w-full divide-y divide-slate-100 text-left text-xs">
+                                <thead class="bg-slate-50 font-bold text-slate-500 uppercase">
+                                    <tr>
+                                        <th class="px-5 py-3.5">Employee</th>
+                                        <th class="px-5 py-3.5">Date</th>
+                                        <th class="px-5 py-3.5">Requested In/Out</th>
+                                        <th class="px-5 py-3.5">Reason</th>
+                                        <th class="px-5 py-3.5 text-right">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="mgmt-reg-tbody" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-4 border-b border-slate-100 bg-slate-50">
+                            <h3 class="font-bold text-slate-800 text-sm"><i class="fas fa-calendar-minus text-purple-600 mr-2"></i>Pending Leaves</h3>
+                        </div>
+                        <div class="overflow-x-auto table-container">
+                            <table class="min-w-full divide-y divide-slate-100 text-left text-xs">
+                                <thead class="bg-slate-50 font-bold text-slate-500 uppercase">
+                                    <tr>
+                                        <th class="px-5 py-3.5">Employee</th>
+                                        <th class="px-5 py-3.5">Type</th>
+                                        <th class="px-5 py-3.5">Dates</th>
+                                        <th class="px-5 py-3.5">Reason</th>
+                                        <th class="px-5 py-3.5 text-right">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="mgmt-leave-req-tbody" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6. Roster Setup -->
+                <div id="mgmt-tab-roster" class="mgmt-view-panel hidden space-y-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 lg:col-span-1 h-fit">
+                        <h3 class="font-bold text-slate-800 text-sm mb-4"><i class="fas fa-calendar-plus text-blue-600 mr-1.5"></i>Assign Shift</h3>
+                        <form id="roster-form" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Employee*</label>
+                                <select id="roster-user" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs">
+                                    <option value="ALL">Assign to ALL Employees</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Date*</label>
+                                <input type="date" id="roster-date" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs">
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-600 mb-1">Start Time*</label>
+                                    <input type="time" id="roster-start" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-600 mb-1">End Time*</label>
+                                    <input type="time" id="roster-end" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs">
+                                </div>
+                            </div>
+                            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-xs shadow-sm">Assign Roster</button>
+                        </form>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden lg:col-span-2">
+                        <div class="p-4 border-b border-slate-100 bg-slate-50">
+                            <h3 class="font-bold text-slate-800 text-sm">Assigned Shifts</h3>
+                        </div>
+                        <div class="overflow-x-auto table-container">
+                            <table class="min-w-full divide-y divide-slate-100 text-left text-xs">
+                                <thead class="bg-slate-50 font-bold text-slate-500 uppercase">
+                                    <tr>
+                                        <th class="px-5 py-3.5">Date</th>
+                                        <th class="px-5 py-3.5">Employee</th>
+                                        <th class="px-5 py-3.5">Shift</th>
+                                        <th class="px-5 py-3.5 text-right">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="mgmt-roster-tbody" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 7. Employees Directory -->
+                <div id="mgmt-tab-employees" class="mgmt-view-panel hidden space-y-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-base">Employee Master Directory</h3>
+                            <p class="text-xs text-slate-500">Manage workforce, reset passwords, and generate corporate letters</p>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <button id="btn-purge-demo" onclick="purge3DemoEmployees()" class="bg-rose-50 hover:bg-rose-100 text-rose-700 px-3 py-2 rounded-xl font-bold text-xs border border-rose-200 transition-colors">
+                                <i class="fas fa-trash-alt mr-1.5"></i>Purge Demo Staff
+                            </button>
+                            <button onclick="seed3DemoEmployees(false)" class="bg-purple-50 hover:bg-purple-100 text-purple-700 px-3 py-2 rounded-xl font-bold text-xs border border-purple-200 transition-colors">
+                                <i class="fas fa-magic mr-1.5"></i>Seed 3 Demo Staff
+                            </button>
+                            <button onclick="openEmpCreateModal()" class="bg-slate-900 hover:bg-black text-white px-4 py-2 rounded-xl font-bold text-xs shadow-sm">
+                                <i class="fas fa-user-plus mr-1.5"></i>Add New Employee
+                            </button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="overflow-x-auto table-container">
+                            <table class="min-w-full divide-y divide-slate-100 text-left text-xs">
+                                <thead class="bg-slate-50 font-bold text-slate-500 uppercase">
+                                    <tr>
+                                        <th class="px-5 py-3.5">Employee</th>
+                                        <th class="px-5 py-3.5">Contact</th>
+                                        <th class="px-5 py-3.5">Role & Dept</th>
+                                        <th class="px-5 py-3.5">Annual CTC</th>
+                                        <th class="px-5 py-3.5 text-right">Letters / Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="mgmt-employees-tbody" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 8. Verify Docs -->
+                <div id="mgmt-tab-docs" class="mgmt-view-panel hidden space-y-4">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-4 border-b border-slate-100 bg-slate-50">
+                            <h3 class="font-bold text-slate-800 text-sm">Employee Document Verification</h3>
+                            <p class="text-xs text-slate-500">Inspect employee dossiers, approve, or reject with feedback reasons.</p>
+                        </div>
+                        <div class="overflow-x-auto table-container">
+                            <table class="min-w-full divide-y divide-slate-100 text-left text-xs">
+                                <thead class="bg-slate-50 font-bold text-slate-500 uppercase">
+                                    <tr>
+                                        <th class="px-5 py-3.5">Employee</th>
+                                        <th class="px-5 py-3.5">Document Type</th>
+                                        <th class="px-5 py-3.5">Date</th>
+                                        <th class="px-5 py-3.5">Status</th>
+                                        <th class="px-5 py-3.5 text-right">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="mgmt-verify-docs-tbody" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 9. Reports (CSV, Excel, PDF) -->
+                <div id="mgmt-tab-reports" class="mgmt-view-panel hidden space-y-6">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                        <h3 class="font-bold text-slate-800 text-base mb-2">HRMS Analytical Reports</h3>
+                        <p class="text-xs text-slate-500 mb-6">Generate and download official company records.</p>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div class="border border-slate-200 rounded-xl p-4 bg-slate-50 flex flex-col justify-between">
+                                <div>
+                                    <h4 class="font-bold text-slate-800 text-xs mb-1">Attendance Master Report</h4>
+                                    <p class="text-[11px] text-slate-500">Full logs with punch times, working hours, and regularizations.</p>
+                                </div>
+                                <div class="flex gap-2 mt-4">
+                                    <button onclick="exportCSVReport('attendance')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 rounded-lg text-xs">CSV / Excel</button>
+                                    <button onclick="exportPDFReport('attendance')" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-1.5 rounded-lg text-xs">PDF</button>
+                                </div>
+                            </div>
+
+                            <div class="border border-slate-200 rounded-xl p-4 bg-slate-50 flex flex-col justify-between">
+                                <div>
+                                    <h4 class="font-bold text-slate-800 text-xs mb-1">Leave History Report</h4>
+                                    <p class="text-[11px] text-slate-500">Complete listing of approved, pending, and rejected leaves.</p>
+                                </div>
+                                <div class="flex gap-2 mt-4">
+                                    <button onclick="exportCSVReport('leaves')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 rounded-lg text-xs">CSV / Excel</button>
+                                    <button onclick="exportPDFReport('leaves')" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-1.5 rounded-lg text-xs">PDF</button>
+                                </div>
+                            </div>
+
+                            <div class="border border-slate-200 rounded-xl p-4 bg-slate-50 flex flex-col justify-between">
+                                <div>
+                                    <h4 class="font-bold text-slate-800 text-xs mb-1">Employees Master Report</h4>
+                                    <p class="text-[11px] text-slate-500">Employee census with departments, roles, and contacts.</p>
+                                </div>
+                                <div class="flex gap-2 mt-4">
+                                    <button onclick="exportCSVReport('employees')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 rounded-lg text-xs">CSV / Excel</button>
+                                    <button onclick="exportPDFReport('employees')" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-1.5 rounded-lg text-xs">PDF</button>
+                                </div>
+                            </div>
+
+                            <div class="border border-slate-200 rounded-xl p-4 bg-slate-50 flex flex-col justify-between">
+                                <div>
+                                    <h4 class="font-bold text-slate-800 text-xs mb-1"><i class="fas fa-calculator text-emerald-600 mr-1"></i>Payroll & CTC Master Report</h4>
+                                    <p class="text-[11px] text-slate-500">Monthly payroll runs, LOP deductions, PF, PT, and net pay disbursement.</p>
+                                </div>
+                                <div class="flex gap-2 mt-4">
+                                    <button onclick="exportCSVReport('payroll')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 rounded-lg text-xs">CSV / Excel</button>
+                                    <button onclick="exportPDFReport('payroll')" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-1.5 rounded-lg text-xs">PDF</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 10. Corporate Payroll Engine -->
+                <div id="mgmt-tab-payroll" class="mgmt-view-panel hidden space-y-6">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-slate-100">
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-base">Corporate Payroll & Compensation Engine</h3>
+                                <p class="text-xs text-slate-500">Computes monthly gross, LOP deductions, statutory PF/PT, and generates signed payslips.</p>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <input type="month" id="payroll-process-month" class="px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold">
+                                <button type="button" onclick="processMonthlyPayrollRun()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-sm flex items-center gap-1.5">
+                                    <i class="fas fa-calculator"></i> Process Month
+                                </button>
+                                <button type="button" onclick="lockAndApprovePayroll()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-sm flex items-center gap-1.5">
+                                    <i class="fas fa-lock"></i> Lock & Approve
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Summary Cards -->
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 my-5">
+                            <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5">
+                                <span class="text-[10px] uppercase font-bold text-slate-400">Total Monthly Gross</span>
+                                <p id="pay-sum-gross" class="text-xl font-mono font-black text-slate-800 mt-0.5">₹0</p>
+                            </div>
+                            <div class="bg-rose-50 border border-rose-200 rounded-xl p-3.5">
+                                <span class="text-[10px] uppercase font-bold text-rose-600">Total LOP Deductions</span>
+                                <p id="pay-sum-lop" class="text-xl font-mono font-black text-rose-700 mt-0.5">₹0</p>
+                            </div>
+                            <div class="bg-amber-50 border border-amber-200 rounded-xl p-3.5">
+                                <span class="text-[10px] uppercase font-bold text-amber-600">Total Statutory (PF+PT)</span>
+                                <p id="pay-sum-stat" class="text-xl font-mono font-black text-amber-700 mt-0.5">₹0</p>
+                            </div>
+                            <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5">
+                                <span class="text-[10px] uppercase font-bold text-emerald-600">Total Net Disbursal</span>
+                                <p id="pay-sum-net" class="text-xl font-mono font-black text-emerald-700 mt-0.5">₹0</p>
+                            </div>
+                        </div>
+
+                        <!-- Payroll Run Table -->
+                        <div class="overflow-x-auto table-container">
+                            <table class="min-w-full divide-y divide-slate-100 text-left text-xs">
+                                <thead class="bg-slate-50 font-bold text-slate-500 uppercase">
+                                    <tr>
+                                        <th class="px-5 py-3.5">Employee</th>
+                                        <th class="px-5 py-3.5">Annual CTC</th>
+                                        <th class="px-5 py-3.5">Monthly Gross</th>
+                                        <th class="px-5 py-3.5">Paid / LOP Days</th>
+                                        <th class="px-5 py-3.5">LOP Deduction</th>
+                                        <th class="px-5 py-3.5">Earned Gross</th>
+                                        <th class="px-5 py-3.5">Statutory (PF+PT)</th>
+                                        <th class="px-5 py-3.5 font-bold text-emerald-700">Net Payable</th>
+                                        <th class="px-5 py-3.5 text-right">Payslip PDF</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="mgmt-payroll-tbody" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 11. Audit Log -->
+                <div id="mgmt-tab-audit" class="mgmt-view-panel hidden space-y-4">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-4 border-b border-slate-100 bg-slate-50">
+                            <h3 class="font-bold text-slate-800 text-sm">System Audit Trail</h3>
+                            <p class="text-xs text-slate-500">Immutable ledger of modifications and administrative actions.</p>
+                        </div>
+                        <div class="overflow-x-auto table-container">
+                            <table class="min-w-full divide-y divide-slate-100 text-left text-xs">
+                                <thead class="bg-slate-50 font-bold text-slate-500 uppercase">
+                                    <tr>
+                                        <th class="px-5 py-3.5">Timestamp</th>
+                                        <th class="px-5 py-3.5">Actor</th>
+                                        <th class="px-5 py-3.5">Action</th>
+                                        <th class="px-5 py-3.5">Target</th>
+                                        <th class="px-5 py-3.5">Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="mgmt-audit-tbody" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 12. Holidays Management -->
+                <div id="mgmt-tab-holidays" class="mgmt-view-panel hidden space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-bold text-slate-800 text-base">Holiday Setup</h3>
+                        <button onclick="document.getElementById('holiday-modal').classList.remove('hidden')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold text-xs shadow-sm">
+                            <i class="fas fa-plus mr-1.5"></i>Add Holiday
+                        </button>
+                    </div>
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="overflow-x-auto table-container">
+                            <table class="min-w-full divide-y divide-slate-100 text-left text-xs">
+                                <thead class="bg-slate-50 font-bold text-slate-500 uppercase">
+                                    <tr>
+                                        <th class="px-5 py-3.5">Date</th>
+                                        <th class="px-5 py-3.5">Holiday Name</th>
+                                        <th class="px-5 py-3.5">Type</th>
+                                        <th class="px-5 py-3.5 text-right">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="mgmt-holidays-tbody" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 13. Settings (Late Cutoff & IP Restriction) -->
+                <div id="mgmt-tab-settings" class="mgmt-view-panel hidden space-y-6">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 max-w-xl">
+                        <h3 class="text-base font-bold text-slate-800 mb-1"><i class="fas fa-sliders-h text-blue-600 mr-2"></i>System Policies & Settings</h3>
+                        <p class="text-xs text-slate-500 mb-6">Configure late thresholds and punch restrictions.</p>
+                        
+                        <!-- Late Cutoff Setting -->
+                        <div class="mb-5 p-4 border border-slate-200 rounded-xl bg-slate-50">
+                            <label class="block font-bold text-slate-800 text-xs mb-1">Late Arrival Cutoff Time</label>
+                            <p class="text-[11px] text-slate-500 mb-2">Employees clocking in after this time are marked Late on the dashboard.</p>
+                            <div class="flex gap-2">
+                                <input type="time" id="setting-late-val" class="px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white font-semibold">
+                                <button id="btn-save-late" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-bold text-xs shadow-sm">Update Cutoff</button>
+                            </div>
+                        </div>
+
+                        <!-- IP Restriction -->
+                        <div class="flex items-center justify-between mb-4 p-4 border border-slate-200 rounded-xl bg-slate-50">
+                            <div>
+                                <p class="font-bold text-slate-800 text-xs">Enable Office IP Restriction</p>
+                                <p class="text-[11px] text-slate-500">Blocks punches outside company Wi-Fi IP.</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="setting-ip-toggle" class="sr-only peer">
+                                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                        </div>
+                        
+                        <div id="setting-ip-container" class="space-y-4 opacity-50 pointer-events-none transition-opacity">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Office Public IP Address</label>
+                                <div class="flex gap-2">
+                                    <input type="text" id="setting-ip-val" class="flex-1 px-3 py-2 rounded-xl border border-slate-300 font-mono text-xs">
+                                    <button id="btn-save-settings" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-bold text-xs shadow-sm">Save IP</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </main>
+    </div>
+
+    
+    <!-- Virtue Core Frontend Script Architecture -->
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

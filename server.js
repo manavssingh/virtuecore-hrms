@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const os = require('os');
 const config = require('./src/config');
 
 // Initialize database & default seed data
@@ -65,11 +66,26 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(config.port, () => {
+function getLocalIp() {
+  const nets = os.networkInterfaces();
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name]) {
+      if (net.family === 'IPv4' && !net.internal) {
+        return net.address;
+      }
+    }
+  }
+  return 'localhost';
+}
+
+const HOST = '0.0.0.0';
+app.listen(config.port, HOST, () => {
+  const localIp = getLocalIp();
   console.log(`=======================================================`);
   console.log(`🚀 Virtue Core Enterprise HRMS Server is Live!`);
-  console.log(`📡 URL: http://localhost:${config.port}`);
-  console.log(`🔒 Security: JWT Auth + bcrypt Password Hashing + RBAC`);
-  console.log(`💾 Database: SQLite (Node Native Persistent Storage)`);
+  console.log(`💻 Local URL:  http://localhost:${config.port}`);
+  console.log(`📱 Wi-Fi URL:  http://${localIp}:${config.port}`);
+  console.log(`🔒 Security:   JWT Auth + bcrypt Password Hashing + RBAC`);
+  console.log(`💾 Database:   SQLite (Node Native Persistent Storage)`);
   console.log(`=======================================================`);
 });

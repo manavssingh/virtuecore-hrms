@@ -312,5 +312,25 @@ const API = {
 
   async purgeDemo() {
     return this.request('/demo/purge', { method: 'POST' });
+  },
+
+  async downloadBackup() {
+    const token = this.getToken();
+    const res = await fetch('/api/settings/backup', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || "Failed to download database backup");
+    }
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `virtuecore-backup-${new Date().toISOString().slice(0, 10)}.db`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
   }
 };

@@ -1407,6 +1407,33 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Database Storage & Backup -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 max-w-xl">
+                        <h3 class="text-base font-bold text-slate-800 mb-1"><i class="fas fa-database text-emerald-600 mr-2"></i>Database Storage & Backup</h3>
+                        <p class="text-xs text-slate-500 mb-5">Manage and export your SQLite database snapshot.</p>
+                        
+                        <div class="p-4 border border-slate-200 rounded-xl bg-slate-50 space-y-3 mb-4">
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="font-bold text-slate-600">Engine:</span>
+                                <span class="font-mono text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200">SQLite (WAL Mode)</span>
+                            </div>
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="font-bold text-slate-600">File Location:</span>
+                                <span class="font-mono text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200">data/virtuecore.db</span>
+                            </div>
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="font-bold text-slate-600">Status:</span>
+                                <span class="text-emerald-700 font-bold flex items-center gap-1"><i class="fas fa-check-circle"></i> Connected & Active</span>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row gap-3">
+                            <button id="btn-download-db" type="button" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-bold text-xs shadow-sm flex items-center justify-center gap-2">
+                                <i class="fas fa-download"></i> Download Database Backup (.db)
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
             </div>

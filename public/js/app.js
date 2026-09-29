@@ -2317,6 +2317,17 @@ document.getElementById('btn-save-settings')?.addEventListener('click', async ()
     }
 });
 
+// Download Database Backup Snapshot
+document.getElementById('btn-download-db')?.addEventListener('click', async () => {
+    try {
+        showToast("Preparing database snapshot...");
+        await API.downloadBackup();
+        showToast("Database backup downloaded successfully!");
+    } catch (err) {
+        showToast(err.message || "Failed to download database backup", "error");
+    }
+});
+
 // Demo Data Actions
 window.seed3DemoEmployees = async (silent = false) => {
     try {
